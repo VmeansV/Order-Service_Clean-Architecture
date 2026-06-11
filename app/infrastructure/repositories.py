@@ -13,7 +13,7 @@ class OrderRepository:
         user_id: str
         item_id: UUID
         quantity: int
-        idempotency_key: UUID
+        idempotency_key: str
 
     def __init__(self, session: AsyncSession):
         self._session = session
@@ -61,7 +61,7 @@ class OrderRepository:
 
         return self._construct(row)
 
-    async def get_by_idempotency_key(self, idempotency_key: UUID) -> Order | None:
+    async def get_by_idempotency_key(self, idempotency_key: str) -> Order | None:
         stmt = select(*orders_tbl.c).where(
             orders_tbl.c.idempotency_key == idempotency_key
         )

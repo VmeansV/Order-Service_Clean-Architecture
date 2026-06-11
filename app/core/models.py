@@ -19,7 +19,7 @@ class Order(BaseModel):
     item_id: UUID
     quantity: int
     status: OrderStatus
-    idempotency_key: UUID
+    idempotency_key: str
     created_at: datetime
     updated_at: datetime
 

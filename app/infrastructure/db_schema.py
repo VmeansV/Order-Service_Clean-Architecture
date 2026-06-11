@@ -12,7 +12,7 @@ orders_tbl = Table(
     Column("item_id", UUID(as_uuid=True), nullable=False),
     Column("quantity", Integer, nullable=False),
     Column("status", String(20), nullable=False, server_default="NEW"),
-    Column("idempotency_key", UUID(as_uuid=True), unique=True, nullable=False),
+    Column("idempotency_key", String(255), unique=True, nullable=False),
     Column("created_at", DateTime, server_default=func.now(), nullable=False),
     Column("updated_at", DateTime, server_default=func.now(), nullable=False),
 )
