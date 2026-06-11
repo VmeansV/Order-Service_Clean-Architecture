@@ -1,0 +1,33 @@
+[project]
+name = "order-service"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["app"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # ошибки стиля (pycodestyle)
+    "F",     # ошибки кода (pyflakes)
+    "I",     # сортировка импортов (isort)
+    "N",     # именование переменных и классов (pep8-naming)
+    "UP",    # подсказки по обновлению синтаксиса Python
+    "ASYNC", # ошибки в асинхронном коде
+]
+ignore = [
+    "E501",  # длина строки — за это отвечает formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

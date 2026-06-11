@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+sqlalchemy
+alembic
+asyncpg
+httpx
+confluent-kafka
+python-dotenv
+ruff
+psycopg2-binary
