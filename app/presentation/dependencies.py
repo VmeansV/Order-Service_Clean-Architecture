@@ -8,7 +8,7 @@ from app.config import settings
 from app.infrastructure.http_clients import CatalogServiceClient
 from app.infrastructure.unit_of_work import UnitOfWork
 
-engine = create_async_engine(settings.database_url)
+engine = create_async_engine(settings.async_database_url)
 session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 catalog_client = CatalogServiceClient(
