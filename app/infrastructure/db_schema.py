@@ -5,7 +5,7 @@ from sqlalchemy import UUID, Column, DateTime, Integer, MetaData, String, Table,
 metadata = MetaData()
 
 orders_tbl = Table(
-    "orders",
+    "orders_v2",
     metadata,
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
     Column("user_id", String(255), nullable=False),

@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column("item_id", sa.UUID(), nullable=False),
         sa.Column("quantity", sa.Integer(), nullable=False),
         sa.Column("status", sa.String(length=20), server_default="NEW", nullable=False),
-        sa.Column("idempotency_key", sa.UUID(), nullable=False),
+        sa.Column("idempotency_key", sa.String(length=255), nullable=False),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
