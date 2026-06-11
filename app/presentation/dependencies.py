@@ -12,7 +12,7 @@ engine = create_async_engine(settings.database_url)
 session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 catalog_client = CatalogServiceClient(
-    base_url=settings.capashino_base_url, api_key=settings.api_token
+    base_url=settings.capashino_base_url, api_key=settings.lms_api_key
 )
 
 
