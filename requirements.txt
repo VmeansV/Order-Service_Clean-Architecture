@@ -10,3 +10,4 @@ confluent-kafka
 python-dotenv
 ruff
 psycopg2-binary
+sentry-sdk[fastapi]

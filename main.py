@@ -1,9 +1,14 @@
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI
 
+from app.config import settings
 from app.presentation.api import router
 from app.presentation.dependencies import catalog_client, engine
+
+if settings.sentry_dsn:
+    sentry_sdk.init(dsn=settings.sentry_dsn, traces_sample_rate=1.0)
 
 
 @asynccontextmanager
