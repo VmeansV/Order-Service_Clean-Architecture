@@ -4,8 +4,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.application.create_order import CreateOrderUseCase
+from app.application.process_payment_callback import ProcessPaymentCallbackUseCase
 from app.config import settings
-from app.infrastructure.http_clients import CatalogServiceClient
+from app.infrastructure.http_clients import CatalogServiceClient, PaymentServiceClient
 from app.infrastructure.unit_of_work import UnitOfWork
 
 engine = create_async_engine(settings.async_database_url)
@@ -24,8 +25,28 @@ def get_catalog_client() -> CatalogServiceClient:
     return catalog_client
 
 
+payments_client = PaymentServiceClient(
+    base_url=settings.capashino_base_url,
+    api_key=settings.lms_api_key,
+    callback_url=settings.payment_callback_url,
+)
+
+
+def get_payments_client() -> PaymentServiceClient:
+    return payments_client
+
+
 def get_create_order_use_case(
     uow: Annotated[UnitOfWork, Depends(get_unit_of_work)],
     catalog_client: Annotated[CatalogServiceClient, Depends(get_catalog_client)],
+    payments_client: Annotated[PaymentServiceClient, Depends(get_payments_client)],
 ) -> CreateOrderUseCase:
-    return CreateOrderUseCase(unit_of_work=uow, catalog_client=catalog_client)
+    return CreateOrderUseCase(
+        unit_of_work=uow, catalog_client=catalog_client, payment_client=payments_client
+    )
+
+
+def get_process_payment_callback_use_case(
+    uow: Annotated[UnitOfWork, Depends(get_unit_of_work)],
+) -> ProcessPaymentCallbackUseCase:
+    return ProcessPaymentCallbackUseCase(unit_of_work=uow)

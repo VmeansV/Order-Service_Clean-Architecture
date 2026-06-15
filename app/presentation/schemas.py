@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -19,3 +20,11 @@ class OrderResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+
+class PaymentCallbackRequest(BaseModel):
+    payment_id: UUID
+    order_id: UUID
+    status: str
+    amount: Decimal
+    error_message: str | None = None

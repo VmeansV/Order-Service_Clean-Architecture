@@ -7,7 +7,8 @@ class Settings(BaseSettings):
     postgres_connection_string: str = Field(alias="POSTGRES_CONNECTION_STRING")
     kafka_bootstrap_servers: str = Field(alias="KAFKA_BOOTSTRAP_SERVERS")
     capashino_base_url: str = Field(alias="CAPASHINO_BASE_URL")
-    sentry_dsn: str = Field(default=None, alias="SENTRY_DSN")
+    sentry_dsn: str | None = Field(default=None, alias="SENTRY_DSN")
+    payment_callback_url: str = Field(alias="PAYMENT_CALLBACK_URL")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

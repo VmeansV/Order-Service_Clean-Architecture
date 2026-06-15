@@ -7,14 +7,25 @@ from app.application.create_order import (
     CreateOrderUseCase,
     InsufficientStockError,
     ItemNotFoundError,
+    PaymentUnavailableError,
+)
+from app.application.process_payment_callback import (
+    OrderNotFoundError,
+    PaymentCallbackDTO,
+    ProcessPaymentCallbackUseCase,
 )
 from app.core.models import Order
 from app.infrastructure.unit_of_work import UnitOfWork
 from app.presentation.dependencies import (
     get_create_order_use_case,
+    get_process_payment_callback_use_case,
     get_unit_of_work,
 )
-from app.presentation.schemas import CreateOrderRequest, OrderResponse
+from app.presentation.schemas import (
+    CreateOrderRequest,
+    OrderResponse,
+    PaymentCallbackRequest,
+)
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
@@ -68,3 +79,29 @@ async def create_order(
 
     except CatalogUnavailableError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    except PaymentUnavailableError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/payment-callback")
+async def payment_callback(
+    body: PaymentCallbackRequest,
+    use_case: ProcessPaymentCallbackUseCase = Depends(
+        get_process_payment_callback_use_case
+    ),
+) -> dict:
+    try:
+        await use_case.execute(
+            PaymentCallbackDTO(
+                payment_id=body.payment_id,
+                order_id=body.order_id,
+                status=body.status,
+                amount=body.amount,
+                error_message=body.error_message,
+            )
+        )
+        return {"status": "ok"}
+
+    except OrderNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

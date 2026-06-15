@@ -2,11 +2,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.core.models import Order
+from app.core.models import Order, OrderStatus
 from app.infrastructure.http_clients import (
     CatalogItemNotFoundError,
     CatalogServiceClient,
     CatalogServiceError,
+    PaymentServiceClient,
+    PaymentServiceError,
 )
 from app.infrastructure.unit_of_work import UnitOfWork
 
@@ -23,6 +25,10 @@ class CatalogUnavailableError(Exception):
     pass
 
 
+class PaymentUnavailableError(Exception):
+    pass
+
+
 class CreateOrderUseCase:
     class InputDTO(BaseModel):
         user_id: str
@@ -31,10 +37,14 @@ class CreateOrderUseCase:
         idempotency_key: str
 
     def __init__(
-        self, unit_of_work: UnitOfWork, catalog_client: CatalogServiceClient
+        self,
+        unit_of_work: UnitOfWork,
+        catalog_client: CatalogServiceClient,
+        payment_client: PaymentServiceClient,
     ) -> None:
         self._unit_of_work = unit_of_work
         self._catalog_client = catalog_client
+        self._payment_client = payment_client
 
     async def execute(self, data: InputDTO) -> Order:
         async with self._unit_of_work() as uow:
@@ -44,29 +54,42 @@ class CreateOrderUseCase:
             if existing_order is not None:
                 return existing_order
 
-            try:
-                item = await self._catalog_client.get_item(data.item_id)
-            except CatalogItemNotFoundError as exc:
-                raise ItemNotFoundError(
-                    f"Item with id {data.item_id} not found"
-                ) from exc
-            except CatalogServiceError as exc:
-                raise CatalogUnavailableError("Catalog service is unavailable") from exc
+        try:
+            item = await self._catalog_client.get_item(data.item_id)
+        except CatalogItemNotFoundError as exc:
+            raise ItemNotFoundError(f"Item with id {data.item_id} not found") from exc
+        except CatalogServiceError as exc:
+            raise CatalogUnavailableError("Catalog service is unavailable") from exc
 
-            if item.available_qty < data.quantity:
-                raise InsufficientStockError(
-                    f"Insufficient stock for item {data.item_id}. "
-                    f"Available: {item.available_qty}, requested: {data.quantity}"
-                )
+        if item.available_qty < data.quantity:
+            raise InsufficientStockError(
+                f"Insufficient stock for item {data.item_id}. "
+                f"Available: {item.available_qty}, requested: {data.quantity}"
+            )
 
+        amount = item.price * data.quantity
+
+        async with self._unit_of_work() as uow:
             order = await uow.orders.create(
                 uow.orders.CreateDTO(
                     user_id=data.user_id,
                     item_id=data.item_id,
                     quantity=data.quantity,
+                    amount=amount,
                     idempotency_key=data.idempotency_key,
                 )
             )
-
             await uow.commit()
-            return order
+        try:
+            await self._payment_client.create_payment(
+                order_id=str(order.id),
+                amount=str(order.amount),
+                idempotency_key=data.idempotency_key,
+            )
+        except PaymentServiceError as exc:
+            async with self._unit_of_work() as uow:
+                await uow.orders.update_status(order.id, OrderStatus.CANCELLED)
+                await uow.commit()
+            raise PaymentUnavailableError("Payment service is unavailable") from exc
+
+        return order

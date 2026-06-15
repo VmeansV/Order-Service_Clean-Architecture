@@ -1,7 +1,8 @@
+from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel
-from sqlalchemy import Row, insert, select
+from sqlalchemy import Row, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Order, OrderStatus
@@ -13,6 +14,7 @@ class OrderRepository:
         user_id: str
         item_id: UUID
         quantity: int
+        amount: Decimal
         idempotency_key: str
 
     def __init__(self, session: AsyncSession):
@@ -27,6 +29,7 @@ class OrderRepository:
             user_id=data["user_id"],
             item_id=data["item_id"],
             quantity=data["quantity"],
+            amount=data["amount"],
             status=OrderStatus(data["status"]),
             idempotency_key=data["idempotency_key"],
             created_at=data["created_at"],
@@ -40,6 +43,7 @@ class OrderRepository:
                 user_id=order.user_id,
                 item_id=order.item_id,
                 quantity=order.quantity,
+                amount=order.amount,
                 status=OrderStatus.NEW.value,
                 idempotency_key=order.idempotency_key,
             )
@@ -51,13 +55,13 @@ class OrderRepository:
 
         return self._construct(row)
 
-    async def get_by_id(self, order_id: UUID) -> Order:
+    async def get_by_id(self, order_id: UUID) -> Order | None:
         stmt = select(*orders_tbl.c).where(orders_tbl.c.id == order_id)
         result = await self._session.execute(stmt)
         row = result.fetchone()
 
         if row is None:
-            raise ValueError(f"Order with id {order_id} not found")
+            return None
 
         return self._construct(row)
 
@@ -70,5 +74,21 @@ class OrderRepository:
 
         if row is None:
             return None
+
+        return self._construct(row)
+
+    async def update_status(self, order_id: UUID, status: OrderStatus) -> Order:
+        stmt = (
+            update(orders_tbl)
+            .where(orders_tbl.c.id == order_id)
+            .values(status=status.value)
+            .returning(*orders_tbl.c)
+        )
+
+        result = await self._session.execute(stmt)
+        row = result.fetchone()
+
+        if row is None:
+            raise ValueError(f"Order with id {order_id} not found")
 
         return self._construct(row)
