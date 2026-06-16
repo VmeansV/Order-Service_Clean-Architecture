@@ -14,7 +14,7 @@ class KafkaConsumerClient:
             {
                 "bootstrap.servers": settings.kafka_bootstrap_servers,
                 "group.id": self.GROUP_ID,
-                "auto.offset.reset": "earliest",
+                "auto.offset.reset": "latest",
                 "enable.auto.commit": True,
             }
         )
