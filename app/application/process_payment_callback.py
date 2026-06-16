@@ -1,10 +1,17 @@
+import logging
 from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from app.core.models import Order, OrderStatus
+from app.infrastructure.http_clients import (
+    NotificationServiceClient,
+    NotificationServiceError,
+)
 from app.infrastructure.unit_of_work import UnitOfWork
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentCallbackDTO(BaseModel):
@@ -20,8 +27,13 @@ class OrderNotFoundError(Exception):
 
 
 class ProcessPaymentCallbackUseCase:
-    def __init__(self, unit_of_work: UnitOfWork) -> None:
+    def __init__(
+        self,
+        unit_of_work: UnitOfWork,
+        notifications_client: NotificationServiceClient,
+    ) -> None:
         self._unit_of_work = unit_of_work
+        self._notifications_client = notifications_client
 
     async def execute(self, data: PaymentCallbackDTO) -> Order:
         async with self._unit_of_work() as uow:
@@ -53,4 +65,22 @@ class ProcessPaymentCallbackUseCase:
                 )
 
             await uow.commit()
-            return order
+
+        try:
+            if data.status == "succeeded":
+                await self._notifications_client.send_notification(
+                    message="Ваш заказ успешно оплачен и готов к отправке",
+                    reference_id=str(order.id),
+                    idempotency_key=f"{order.id}:PAID",
+                )
+            else:
+                reason = data.error_message or "Payment failed"
+                await self._notifications_client.send_notification(
+                    message=f"Ваше заказ отменен. Причина: {reason}",
+                    reference_id=str(order.id),
+                    idempotency_key=f"{order.id}:CANCELLED:payment",
+                )
+        except NotificationServiceError as exc:
+            logger.error(f"Failed to send notification: {exc}")
+
+        return order

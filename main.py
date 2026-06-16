@@ -15,6 +15,7 @@ from app.presentation.api import router
 from app.presentation.dependencies import (
     catalog_client,
     engine,
+    notifications_client,
     payments_client,
     session_factory,
 )
@@ -44,7 +45,9 @@ async def main():
         unit_of_work=uow, kafka_producer=kafka_producer
     )
 
-    shipment_use_case = ProcessShipmentEventUseCase(unit_of_work=uow)
+    shipment_use_case = ProcessShipmentEventUseCase(
+        unit_of_work=uow, notifications_client=notifications_client
+    )
 
     outbox_worker = OutboxWorker(use_case=outbox_use_case)
 
@@ -69,6 +72,7 @@ async def main():
         kafka_producer.close()
         await catalog_client.close()
         await payments_client.close()
+        await notifications_client.close()
         await engine.dispose()
 
 

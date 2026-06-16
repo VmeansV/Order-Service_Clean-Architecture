@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -7,10 +8,14 @@ from app.infrastructure.http_clients import (
     CatalogItemNotFoundError,
     CatalogServiceClient,
     CatalogServiceError,
+    NotificationServiceClient,
+    NotificationServiceError,
     PaymentServiceClient,
     PaymentServiceError,
 )
 from app.infrastructure.unit_of_work import UnitOfWork
+
+logger = logging.getLogger(__name__)
 
 
 class ItemNotFoundError(Exception):
@@ -41,10 +46,12 @@ class CreateOrderUseCase:
         unit_of_work: UnitOfWork,
         catalog_client: CatalogServiceClient,
         payment_client: PaymentServiceClient,
+        notifications_client: NotificationServiceClient,
     ) -> None:
         self._unit_of_work = unit_of_work
         self._catalog_client = catalog_client
         self._payment_client = payment_client
+        self._notifications_client = notifications_client
 
     async def execute(self, data: InputDTO) -> Order:
         async with self._unit_of_work() as uow:
@@ -80,6 +87,16 @@ class CreateOrderUseCase:
                 )
             )
             await uow.commit()
+
+        try:
+            await self._notifications_client.send_notification(
+                message="Ваш заказ создан и ожидает оплаты",
+                reference_id=str(order.id),
+                idempotency_key=f"{order.id}:NEW",
+            )
+        except NotificationServiceError as exc:
+            logger.error(f"Failed to send NEW notification: {exc}")
+
         try:
             await self._payment_client.create_payment(
                 order_id=str(order.id),
@@ -90,6 +107,14 @@ class CreateOrderUseCase:
             async with self._unit_of_work() as uow:
                 await uow.orders.update_status(order.id, OrderStatus.CANCELLED)
                 await uow.commit()
+            try:
+                await self._notifications_client.send_notification(
+                    message="Ваш заказ отменен. Причина: Payment service is unavailable",
+                    reference_id=str(order.id),
+                    idempotency_key=f"{order.id}:CANCELLED:payment-create",
+                )
+            except NotificationServiceError as notify_exc:
+                logger.error(f"Failed to send CANCELLED notification: {notify_exc}")
             raise PaymentUnavailableError("Payment service is unavailable") from exc
 
         return order
