@@ -3,7 +3,6 @@ import logging
 
 from app.application.process_outbox_events import ProcessOutboxEventsUseCase
 
-
 logger = logging.getLogger(__name__)
 
 

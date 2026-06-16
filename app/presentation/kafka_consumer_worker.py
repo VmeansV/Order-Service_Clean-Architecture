@@ -6,9 +6,7 @@ from app.application.process_shipment_event import (
     ProcessShipmentEventUseCase,
     ShipmentEventDTO,
 )
-
 from app.infrastructure.kafka_consumer import KafkaConsumerClient
-
 
 logger = logging.getLogger(__name__)
 

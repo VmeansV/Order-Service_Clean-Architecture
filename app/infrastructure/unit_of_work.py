@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.infrastructure.repositories import (
-    OrderRepository,
     InboxRepository,
+    OrderRepository,
     OutboxRepository,
 )
 

@@ -1,6 +1,7 @@
+import json
 from decimal import Decimal
 from uuid import UUID
-import json
+
 from pydantic import BaseModel
 from sqlalchemy import Row, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +12,7 @@ from app.core.models import (
     OutboxEvent,
     OutboxEventStatus,
 )
-from app.infrastructure.db_schema import orders_tbl, outbox_tbl, inbox_tbl
+from app.infrastructure.db_schema import inbox_tbl, orders_tbl, outbox_tbl
 
 
 class OrderRepository:
