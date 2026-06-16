@@ -45,3 +45,24 @@ class Payment(BaseModel):
     status: str
     idempotency_key: str
     created_at: datetime
+
+
+class OutboxEventStatus(StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+
+
+class OutboxEvent(BaseModel):
+    id: UUID
+    event_type: str
+    payload: dict
+    status: OutboxEventStatus
+    created_at: datetime
+
+
+class InboxEvent(BaseModel):
+    id: UUID
+    event_type: str
+    payload: dict
+    created_at: datetime

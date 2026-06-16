@@ -27,3 +27,22 @@ orders_tbl = Table(
     Column("created_at", DateTime, server_default=func.now(), nullable=False),
     Column("updated_at", DateTime, server_default=func.now(), nullable=False),
 )
+
+outbox_tbl = Table(
+    "outbox",
+    metadata,
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column("event_type", String(255), nullable=False),
+    Column("payload", String, nullable=False),
+    Column("status", String(20), server_default="pending"),
+    Column("created_at", DateTime, server_default=func.now(), nullable=False),
+)
+
+inbox_tbl = Table(
+    "inbox",
+    metadata,
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column("event_type", String(255), nullable=False),
+    Column("payload", String, nullable=False),
+    Column("created_at", DateTime, server_default=func.now(), nullable=False),
+)

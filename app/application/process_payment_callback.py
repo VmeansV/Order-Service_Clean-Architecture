@@ -36,6 +36,17 @@ class ProcessPaymentCallbackUseCase:
             if data.status == "succeeded":
                 order = await uow.orders.update_status(data.order_id, OrderStatus.PAID)
 
+                await uow.outbox.create(
+                    event_type="order.paid",
+                    payload={
+                        "event_type": "order.paid",
+                        "order_id": str(order.id),
+                        "item_id": str(order.item_id),
+                        "quantity": order.quantity,
+                        "idempotency_key": order.idempotency_key,
+                    },
+                )
+
             else:
                 order = await uow.orders.update_status(
                     data.order_id, OrderStatus.CANCELLED
