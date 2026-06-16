@@ -90,7 +90,7 @@ class CreateOrderUseCase:
 
         try:
             await self._notifications_client.send_notification(
-                message="Ваш заказ создан и ожидает оплаты",
+                message="NEW: Ваш заказ создан и ожидает оплаты",
                 reference_id=str(order.id),
                 idempotency_key=f"{order.id}:NEW",
             )
@@ -109,7 +109,7 @@ class CreateOrderUseCase:
                 await uow.commit()
             try:
                 await self._notifications_client.send_notification(
-                    message="Ваш заказ отменен. Причина: Payment service is unavailable",
+                    message="CANCELLED: Ваш заказ отменен. Причина: Payment service is unavailable",
                     reference_id=str(order.id),
                     idempotency_key=f"{order.id}:CANCELLED:payment-create",
                 )

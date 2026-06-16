@@ -76,14 +76,14 @@ class ProcessShipmentEventUseCase:
         try:
             if data.event_type == "order.shipped":
                 await self._notifications_client.send_notification(
-                    message="Ваш заказ отправлен в доставку",
+                    message="SHIPPED: Ваш заказ отправлен в доставку",
                     reference_id=str(order.id),
                     idempotency_key=f"{order.id}:SHIPPED",
                 )
             elif data.event_type == "order.cancelled":
                 reason = data.reason or "Unknown reason"
                 await self._notifications_client.send_notification(
-                    message=f"Ваш заказ отменен. Причина: {reason}",
+                    message=f"CANCELLED: Ваш заказ отменен. Причина: {reason}",
                     reference_id=str(order.id),
                     idempotency_key=f"{order.id}:CANCELLED:shipment",
                 )
