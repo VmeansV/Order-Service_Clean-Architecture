@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID
 
 import httpx
@@ -76,7 +77,7 @@ class PaymentServiceClient:
 
 class NotificationServiceClient:
     def __init__(self, base_url: str, api_key: str) -> None:
-        self._base_url = base_url
+        self._base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(headers={"X-API-Key": api_key}, timeout=10.0)
 
     async def close(self):
@@ -85,19 +86,28 @@ class NotificationServiceClient:
     async def send_notification(
         self, message: str, reference_id: str, idempotency_key: str
     ) -> dict:
-        try:
-            response = await self._client.post(
-                f"{self._base_url}/api/notifications",
-                json={
-                    "message": message,
-                    "reference_id": reference_id,
-                    "idempotency_key": idempotency_key,
-                },
-            )
-            response.raise_for_status()
-            return response.json()
+        last_exc = None
 
-        except httpx.HTTPError as exc:
-            raise NotificationServiceError(
-                f"Notification service request failed: {exc}"
-            ) from exc
+        for attempt in range(3):
+            try:
+                response = await self._client.post(
+                    f"{self._base_url}/api/notifications",
+                    json={
+                        "message": message,
+                        "reference_id": reference_id,
+                        "idempotency_key": idempotency_key,
+                    },
+                )
+                response.raise_for_status()
+                return response.json()
+
+            except httpx.HTTPError as exc:
+                last_exc = exc
+
+                if attempt < 2:
+                    await asyncio.sleep(1)
+                    continue
+
+        raise NotificationServiceError(
+            f"Notification service request failed: {last_exc}"
+        ) from last_exc
