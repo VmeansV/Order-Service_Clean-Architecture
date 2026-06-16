@@ -24,7 +24,7 @@ class KafkaConsumerWorker:
 
         while self._running:
             try:
-                message = self._consumer.poll(timeout=1.0)
+                message = asyncio.to_thread(self._consumer.poll, 1.0)
 
                 if message is None:
                     continue

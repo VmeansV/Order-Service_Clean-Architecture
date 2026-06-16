@@ -1,3 +1,5 @@
+import asyncio
+
 from app.infrastructure.kafka_producer import KafkaProducer
 from app.infrastructure.unit_of_work import UnitOfWork
 
@@ -18,8 +20,10 @@ class ProcessOutboxEventsUseCase:
 
             for event in events:
                 try:
-                    self._kafka_producer.send(
-                        message=event.payload, key=event.payload.get("order_id")
+                    await asyncio.to_thread(
+                        self._kafka_producer.send,
+                        event.payload,
+                        event.payload.get("order_id"),
                     )
                     await uow.outbox.mark_as_sent(event.id)
                     sent_count += 1
