@@ -9,17 +9,22 @@ from app.application.create_order import (
     ItemNotFoundError,
     PaymentUnavailableError,
 )
+from app.application.get_order import (
+    GetOrderUseCase,
+)
+from app.application.get_order import (
+    OrderNotFoundError as GetOrderNotFoundError,
+)
 from app.application.process_payment_callback import (
     OrderNotFoundError,
     PaymentCallbackDTO,
     ProcessPaymentCallbackUseCase,
 )
 from app.core.models import Order
-from app.infrastructure.unit_of_work import UnitOfWork
 from app.presentation.dependencies import (
     get_create_order_use_case,
+    get_get_order_use_case,
     get_process_payment_callback_use_case,
-    get_unit_of_work,
 )
 from app.presentation.schemas import (
     CreateOrderRequest,
@@ -44,15 +49,14 @@ def _to_response(order: Order) -> OrderResponse:
 
 @router.get("/{order_id}")
 async def get_order(
-    order_id: UUID, uow: UnitOfWork = Depends(get_unit_of_work)
+    order_id: UUID,
+    use_case: GetOrderUseCase = Depends(get_get_order_use_case),
 ) -> OrderResponse:
-    async with uow() as transaction:
-        order = await transaction.orders.get_by_id(order_id)
-
-        if order is None:
-            raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
-
+    try:
+        order = await use_case.execute(order_id)
         return _to_response(order)
+    except GetOrderNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("", status_code=201)

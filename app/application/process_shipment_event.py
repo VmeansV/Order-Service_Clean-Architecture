@@ -3,12 +3,14 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.application.interfaces import (
+    AbstractNotificationClient,
+    AbstractUnitOfWork,
+)
 from app.core.models import Order, OrderStatus
 from app.infrastructure.http_clients import (
-    NotificationServiceClient,
     NotificationServiceError,
 )
-from app.infrastructure.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +36,8 @@ class UnknownEventTypeError(Exception):
 class ProcessShipmentEventUseCase:
     def __init__(
         self,
-        unit_of_work: UnitOfWork,
-        notifications_client: NotificationServiceClient,
+        unit_of_work: AbstractUnitOfWork,
+        notifications_client: AbstractNotificationClient,
     ) -> None:
         self._unit_of_work = unit_of_work
         self._notifications_client = notifications_client
@@ -88,6 +90,6 @@ class ProcessShipmentEventUseCase:
                     idempotency_key=f"{order.id}:CANCELLED:shipment",
                 )
         except NotificationServiceError as exc:
-            logger.error(f"Failed to send notification: {exc}")
+            logger.error("Failed to send notification: %s", exc)
 
         return order

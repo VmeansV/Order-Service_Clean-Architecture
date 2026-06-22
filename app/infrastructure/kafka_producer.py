@@ -2,10 +2,11 @@ import json
 
 from confluent_kafka import Producer
 
+from app.application.interfaces import AbstractKafkaProducer
 from app.config import settings
 
 
-class KafkaProducer:
+class KafkaProducer(AbstractKafkaProducer):
     TOPIC = "student_system-order.events"
 
     def __init__(self) -> None:

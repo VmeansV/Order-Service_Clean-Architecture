@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from uuid import uuid4
 
 from app.application.process_shipment_event import (
     ProcessShipmentEventUseCase,
@@ -29,9 +28,13 @@ class KafkaConsumerWorker:
                 if message is None:
                     continue
 
-                logger.info(f"Received event: {message.get('event_type')}")
+                logger.info("Received event: %s", message.get("event_type"))
 
-                event_id = message.get("event_id") or str(uuid4())
+                event_id = message.get("event_id")
+
+                if not event_id:
+                    logger.warning("Skipping message without event_id: %s", message)
+                    continue
 
                 dto = ShipmentEventDTO(
                     event_id=event_id,
@@ -46,11 +49,13 @@ class KafkaConsumerWorker:
                 await self._use_case.execute(dto)
 
                 logger.info(
-                    f"Processed event: {dto.event_type} for order {dto.order_id}"
+                    "Processed event: %s for order %s",
+                    dto.event_type,
+                    dto.order_id,
                 )
 
             except Exception as e:
-                logger.error(f"Kafka consumer worker error: {e}")
+                logger.error("Kafka consumer worker error: %s", e)
 
             await asyncio.sleep(0.1)
 

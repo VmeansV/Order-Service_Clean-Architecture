@@ -1,11 +1,17 @@
 import asyncio
 
-from app.infrastructure.kafka_producer import KafkaProducer
-from app.infrastructure.unit_of_work import UnitOfWork
+from app.application.interfaces import (
+    AbstractKafkaProducer,
+    AbstractUnitOfWork,
+)
 
 
 class ProcessOutboxEventsUseCase:
-    def __init__(self, unit_of_work: UnitOfWork, kafka_producer: KafkaProducer) -> None:
+    def __init__(
+        self,
+        unit_of_work: AbstractUnitOfWork,
+        kafka_producer: AbstractKafkaProducer,
+    ) -> None:
         self._unit_of_work = unit_of_work
         self._kafka_producer = kafka_producer
 

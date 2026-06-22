@@ -19,10 +19,10 @@ class OutboxWorker:
                 sent_count = await self._use_case.execute()
 
                 if sent_count > 0:
-                    logger.info(f"Outbox worker sent {sent_count} events")
+                    logger.info("Outbox worker sent %d events", sent_count)
 
             except Exception as e:
-                logger.error(f"Outbox worker error: {e}")
+                logger.error("Outbox worker error: %s", e)
 
             await asyncio.sleep(1)
 

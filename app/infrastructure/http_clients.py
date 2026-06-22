@@ -3,6 +3,11 @@ from uuid import UUID
 
 import httpx
 
+from app.application.interfaces import (
+    AbstractCatalogClient,
+    AbstractNotificationClient,
+    AbstractPaymentClient,
+)
 from app.core.models import Item
 
 
@@ -22,7 +27,7 @@ class NotificationServiceError(Exception):
     pass
 
 
-class CatalogServiceClient:
+class CatalogServiceClient(AbstractCatalogClient):
     def __init__(self, base_url: str, api_key: str) -> None:
         self._base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(headers={"X-API-Key": api_key}, timeout=10.0)
@@ -46,7 +51,7 @@ class CatalogServiceClient:
             raise CatalogServiceError(f"Catalog service request failed: {exc}") from exc
 
 
-class PaymentServiceClient:
+class PaymentServiceClient(AbstractPaymentClient):
     def __init__(self, base_url: str, api_key: str, callback_url: str) -> None:
         self._base_url = base_url.rstrip("/")
         self._callback_url = callback_url
@@ -75,7 +80,7 @@ class PaymentServiceClient:
             raise PaymentServiceError(f"Payment service request failed: {exc}") from exc
 
 
-class NotificationServiceClient:
+class NotificationServiceClient(AbstractNotificationClient):
     def __init__(self, base_url: str, api_key: str) -> None:
         self._base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(headers={"X-API-Key": api_key}, timeout=10.0)
@@ -88,7 +93,7 @@ class NotificationServiceClient:
     ) -> dict:
         last_exc = None
 
-        for attempt in range(10):
+        for attempt in range(3):
             try:
                 response = await self._client.post(
                     f"{self._base_url}/api/notifications",
@@ -104,8 +109,8 @@ class NotificationServiceClient:
             except httpx.HTTPError as exc:
                 last_exc = exc
 
-                if attempt < 9:
-                    await asyncio.sleep(2)
+                if attempt < 2:
+                    await asyncio.sleep(1)
                     continue
 
         raise NotificationServiceError(

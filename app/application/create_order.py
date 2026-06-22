@@ -3,17 +3,19 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.application.interfaces import (
+    AbstractCatalogClient,
+    AbstractNotificationClient,
+    AbstractPaymentClient,
+    AbstractUnitOfWork,
+)
 from app.core.models import Order, OrderStatus
 from app.infrastructure.http_clients import (
     CatalogItemNotFoundError,
-    CatalogServiceClient,
     CatalogServiceError,
-    NotificationServiceClient,
     NotificationServiceError,
-    PaymentServiceClient,
     PaymentServiceError,
 )
-from app.infrastructure.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +45,10 @@ class CreateOrderUseCase:
 
     def __init__(
         self,
-        unit_of_work: UnitOfWork,
-        catalog_client: CatalogServiceClient,
-        payment_client: PaymentServiceClient,
-        notifications_client: NotificationServiceClient,
+        unit_of_work: AbstractUnitOfWork,
+        catalog_client: AbstractCatalogClient,
+        payment_client: AbstractPaymentClient,
+        notifications_client: AbstractNotificationClient,
     ) -> None:
         self._unit_of_work = unit_of_work
         self._catalog_client = catalog_client
@@ -95,7 +97,7 @@ class CreateOrderUseCase:
                 idempotency_key=f"{order.id}:NEW",
             )
         except NotificationServiceError as exc:
-            logger.error(f"Failed to send NEW notification: {exc}")
+            logger.error("Failed to send NEW notification: %s", exc)
 
         try:
             await self._payment_client.create_payment(
@@ -114,7 +116,7 @@ class CreateOrderUseCase:
                     idempotency_key=f"{order.id}:CANCELLED:payment-create",
                 )
             except NotificationServiceError as notify_exc:
-                logger.error(f"Failed to send CANCELLED notification: {notify_exc}")
+                logger.error("Failed to send CANCELLED notification: %s", notify_exc)
             raise PaymentUnavailableError("Payment service is unavailable") from exc
 
         return order

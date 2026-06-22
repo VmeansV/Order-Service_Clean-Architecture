@@ -11,6 +11,8 @@ from app.config import settings
 from app.infrastructure.kafka_consumer import KafkaConsumerClient
 from app.infrastructure.kafka_producer import KafkaProducer
 from app.infrastructure.unit_of_work import UnitOfWork
+from app.infrastructure.workers.kafka_consumer_worker import KafkaConsumerWorker
+from app.infrastructure.workers.outbox_worker import OutboxWorker
 from app.presentation.api import router
 from app.presentation.dependencies import (
     catalog_client,
@@ -19,8 +21,6 @@ from app.presentation.dependencies import (
     payments_client,
     session_factory,
 )
-from app.presentation.kafka_consumer_worker import KafkaConsumerWorker
-from app.presentation.outbox_worker import OutboxWorker
 
 logging.basicConfig(level=logging.INFO)
 

@@ -3,7 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel
-from sqlalchemy import Row, insert, select, update
+from sqlalchemy import Row, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import (
@@ -26,8 +26,7 @@ class OrderRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    @staticmethod
-    def _construct(row: Row) -> Order:
+    def _construct(self, row: Row) -> Order:
         data = row._mapping
 
         return Order(
@@ -87,7 +86,7 @@ class OrderRepository:
         stmt = (
             update(orders_tbl)
             .where(orders_tbl.c.id == order_id)
-            .values(status=status.value)
+            .values(status=status.value, updated_at=func.now())
             .returning(*orders_tbl.c)
         )
 
@@ -104,8 +103,7 @@ class OutboxRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    @staticmethod
-    def _construct(row: Row) -> OutboxEvent:
+    def _construct(self, row: Row) -> OutboxEvent:
         data = row._mapping
 
         return OutboxEvent(

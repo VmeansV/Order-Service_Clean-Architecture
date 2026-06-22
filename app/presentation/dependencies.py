@@ -4,6 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.application.create_order import CreateOrderUseCase
+from app.application.get_order import GetOrderUseCase
 from app.application.process_payment_callback import ProcessPaymentCallbackUseCase
 from app.config import settings
 from app.infrastructure.http_clients import (
@@ -73,3 +74,9 @@ def get_process_payment_callback_use_case(
         unit_of_work=uow,
         notifications_client=notifications_client,
     )
+
+
+def get_get_order_use_case(
+    uow: Annotated[UnitOfWork, Depends(get_unit_of_work)],
+) -> GetOrderUseCase:
+    return GetOrderUseCase(unit_of_work=uow)
