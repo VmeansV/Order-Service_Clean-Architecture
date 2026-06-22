@@ -1,5 +1,7 @@
 import asyncio
+import json
 import logging
+from uuid import NAMESPACE_URL, uuid5
 
 from app.application.process_shipment_event import (
     ProcessShipmentEventUseCase,
@@ -33,8 +35,12 @@ class KafkaConsumerWorker:
                 event_id = message.get("event_id")
 
                 if not event_id:
-                    logger.warning("Skipping message without event_id: %s", message)
-                    continue
+                    event_id = str(
+                        uuid5(
+                            NAMESPACE_URL,
+                            json.dumps(message, sort_keys=True, ensure_ascii=False),
+                        )
+                    )
 
                 dto = ShipmentEventDTO(
                     event_id=event_id,
