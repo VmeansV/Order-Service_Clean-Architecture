@@ -93,7 +93,7 @@ class NotificationServiceClient(AbstractNotificationClient):
     ) -> dict:
         last_exc = None
 
-        for attempt in range(3):
+        for attempt in range(10):
             try:
                 response = await self._client.post(
                     f"{self._base_url}/api/notifications",
@@ -109,7 +109,7 @@ class NotificationServiceClient(AbstractNotificationClient):
             except httpx.HTTPError as exc:
                 last_exc = exc
 
-                if attempt < 2:
+                if attempt < 9:
                     await asyncio.sleep(1)
                     continue
 
